@@ -1,24 +1,26 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/user');
 
 const app = express();
-const port = 3000;
 
-// 中间件：解析 JSON 请求体
+// 中间件
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
-// 处理根路由
-app.get('/', (req, res) => {
-  res.send('Welcome to the API');
+//路由
+app.use('/api/user', userRoutes);
+// 错误处理中间件
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+        code: 500,
+        message: '服务器内部错误',
+        data: null
+    });
 });
 
-// 使用路由
-app.use('/api/auth', authRoutes);
-
-// 启动服务器
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
-
-
