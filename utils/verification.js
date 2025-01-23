@@ -5,7 +5,7 @@ const generateCode = () => {
 };
 
 const saveCode = async (mobile, code, type) => {
-    const expireTime = new Date(Date.now() + 5 * 60 * 1000); // 5分钟后过期
+    const expireTime = new Date(Date.now() + 60 * 60 * 1000); // 60分钟后过期
 
     await db.execute(
         'INSERT INTO verification_codes (mobile, code, type, expire_time) VALUES (?, ?, ?, ?)',

@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../config/database');
-const { generateToken} = require('../middleware/auth');
+const { generateToken} = require('../utils/jwt');
 const authMiddleware = require('../middleware/auth');
 const { generateCode, saveCode, verifyCode } = require('../utils/verification');
 
 //注册接口
 router.post('/register', async (req,res) => {
+    console.log(req.body);
     try {
         const { user_name, password, mobile, code, company_id = 'default_company' } = req.body;
 
@@ -22,7 +23,7 @@ router.post('/register', async (req,res) => {
 
         //验证密码格式
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,20}$/;
-        if (!passwordRegex.test(user_name)) {
+        if (!passwordRegex.test(password)) {
             return res.json({
                 code: 400,
                 message: '密码格式不正确',
@@ -59,7 +60,7 @@ router.post('/register', async (req,res) => {
                 data:null
             })
         }
-        // 密码加密
+        // 密码加密company_id
         const hashedPassword = await bcrypt.hash(password, 10);
 
         //插入用户数据
@@ -74,7 +75,7 @@ router.post('/register', async (req,res) => {
             role:"User"
         });
 
-        res.json({
+        return res.json({
             code: 200,
             message:'注册成功',
             data: {
@@ -87,7 +88,7 @@ router.post('/register', async (req,res) => {
         })
     } catch (error){
         console.error('注册错误', error);
-        res.json({
+        return res.json({
             code: 500,
             message:"服务器内部错误",
             data: null
@@ -134,7 +135,7 @@ router.post('/login', async (req,res) => {
                 role: user.role,
             })
 
-            res.json({
+            return res.json({
                 code: 200,
                 message: '登录成功',
                 data: {
@@ -181,7 +182,7 @@ router.post('/login', async (req,res) => {
                 user_name: user.user_name,
                 role: user.role
             });
-            res.json({
+            return res.json({
                 code: 200,
                 message: '登录成功',
                 data: {
@@ -193,7 +194,7 @@ router.post('/login', async (req,res) => {
                 }
             });
         } else {
-            res.json({
+            return res.json({
                 code: 400,
                 message: '不支持的登录类型',
                 data: null
@@ -201,7 +202,7 @@ router.post('/login', async (req,res) => {
         }
     } catch (error) {
         console.error('登录错误:', error);
-        res.json({
+        return res.json({
             code: 500,
             message: '服务器内部错误',
             data: null
@@ -257,14 +258,14 @@ router.post('/forget_password', async (req, res) => {
             });
         }
 
-        res.json({
+        return res.json({
             code: 200,
             message: '密码重置成功',
             data: null
         });
     } catch (error) {
         console.error('重置密码错误:', error);
-        res.json({
+        return res.json({
             code: 500,
             message: '服务器内部错误',
             data: null
@@ -292,7 +293,7 @@ router.get('/info', authMiddleware, async (req, res) => {
         // 手机号脱敏
         const maskedMobile = user.mobile.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
 
-        res.json({
+        return res.json({
             code: 200,
             message: 'success',
             data: {
@@ -307,7 +308,7 @@ router.get('/info', authMiddleware, async (req, res) => {
         });
     } catch (error) {
         console.error('获取用户信息错误:', error);
-        res.json({
+        return res.json({
             code: 500,
             message: '服务器内部错误',
             data: null
@@ -315,8 +316,9 @@ router.get('/info', authMiddleware, async (req, res) => {
     }
 });
 
-// 修改发送验证码接口
+// 发送验证码接口
 router.post('/send_code', async (req, res) => {
+    console.log(req.body);
     try {
         const { mobile, type } = req.body;
 
@@ -340,7 +342,7 @@ router.post('/send_code', async (req, res) => {
         const code = generateCode();
         const expireTime = await saveCode(mobile, code, type);
 
-        res.json({
+        return res.json({
             code: 200,
             message: '验证码发送成功',
             data: {
@@ -349,7 +351,7 @@ router.post('/send_code', async (req, res) => {
         });
     } catch (error) {
         console.error('发送验证码错误:', error);
-        res.json({
+        return res.json({
             code: 500,
             message: '服务器内部错误',
             data: null
