@@ -46,7 +46,7 @@ router.post('/register', async (req,res) => {
         if (!isValid) {
             return res.json({
                 code: 400,
-                message: '验证码无效或已过期',
+                message: '验证码错误或已过期',
                 data: null
             });
         }
