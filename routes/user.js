@@ -96,6 +96,7 @@ router.post('/register', async (req,res) => {
     }
 });
 
+//用户登录
 router.post('/login', async (req,res) => {
     try {
         const { type, user_name, password, mobile, code } = req.body;
@@ -359,5 +360,26 @@ router.post('/send_code', async (req, res) => {
     }
 });
 
+//token检验
+router.get('/verify', authMiddleware, async (req, res) => {
+    try {
+        const [user] = await db.execute(
+            'SELECT id FROM users WHERE id = ?',
+            [req.user.user_id]
+        );
+
+        res.json({
+            code: user.length > 0 ? 200 : 401,
+            message: user.length > 0 ? 'token有效' : 'token无效',
+            data: null
+        });
+    } catch (error) {
+        res.json({
+            code: 500,
+            message: '服务器错误',
+            data: null
+        });
+    }
+});
 
 module.exports = router;
