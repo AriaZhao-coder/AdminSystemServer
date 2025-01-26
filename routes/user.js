@@ -399,7 +399,7 @@ router.get('/get_route_list', authMiddleware, async (req, res) => {
                 {
                     icon: "team",
                     zhName: "员工",
-                    route: "/dashboard"
+                    route: "/staff"
                 },
                 {
                     icon: "attendance",
