@@ -382,4 +382,87 @@ router.get('/verify', authMiddleware, async (req, res) => {
     }
 });
 
+
+// 获取路由列表接口
+router.get('/get_route_list', authMiddleware, async (req, res) => {
+    try {
+        const { role } = req.user;
+
+        // 1. 定义各角色对应的路由信息（可写死或从数据库获取）
+        const routeMap = {
+            Admin: [
+                {
+                    icon: "dashboard",
+                    zhName: "员工打卡",
+                    route: "/dashboard"
+                },
+                {
+                    icon: "team",
+                    zhName: "员工",
+                    route: "/dashboard"
+                },
+                {
+                    icon: "attendance",
+                    zhName: "出勤管理",
+                    route: "/attendance"
+                },
+                {
+                    icon: "department",
+                    zhName: "部门",
+                    route: "/department"
+                },
+                {
+                    icon: "level",
+                    zhName: "职级",
+                    route: "/level"
+                },
+                {
+                    icon: "assessment",
+                    zhName: "绩效考核",
+                    route: "/assessment"
+                },
+                {
+                    icon: "salary",
+                    zhName: "调薪记录",
+                    route: "/salary"
+                },
+                {
+                    icon: "rewardRecord",
+                    zhName: "奖惩记录",
+                    route: "/rewardRecord"
+                },
+                {
+                    icon: "bar-chart",
+                    zhName: "考勤信息",
+                    route: "/attendanceInfo"
+                },
+            ],
+            User: [
+                {
+                    icon: "attendance",
+                    zhName: "出勤管理",
+                    route: "/attendance"
+                },
+            ]
+        };
+
+        const userRoutes = routeMap[role] || [];
+
+        return res.json({
+            code: 0,
+            msg: '获取路由成功',
+            data: userRoutes
+        });
+    } catch (error) {
+        console.error('获取路由错误:', error);
+        return res.json({
+            code: 1,
+            msg: '获取路由失败',
+            data: []
+        });
+    }
+});
+
+
+
 module.exports = router;
