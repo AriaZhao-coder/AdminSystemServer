@@ -432,7 +432,7 @@ router.get('/get_route_list', authMiddleware, async (req, res) => {
                     route: "/rewardRecord"
                 },
                 {
-                    icon: "bar-chart",
+                    icon: "barchart",
                     zhName: "考勤信息",
                     route: "/attendanceInfo"
                 },
