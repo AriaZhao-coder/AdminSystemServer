@@ -24,6 +24,18 @@ function getWorkingYearsRange(joinDate) {
     return "2年以上";
 }
 
+// 获取年龄段
+function getAgeRange(age) {
+    if (age < 20) return "20岁以下";
+    if (age <= 25) return "20-25岁";
+    if (age <= 30) return "26-30岁";
+    if (age <= 35) return "31-35岁";
+    if (age <= 40) return "36-40岁";
+    if (age <= 45) return "41-45岁";
+    if (age <= 50) return "46-50岁";
+    return "50岁以上";
+}
+
 // 员工分析接口
 router.get('/analyze_staff', authMiddleware, async (req, res) => {
     try {
@@ -44,10 +56,11 @@ router.get('/analyze_staff', authMiddleware, async (req, res) => {
 
         // 2. 获取员工详细信息用于统计
         const [employees] = await db.execute(`
-            SELECT ep.*, u.user_name, d.dept_name 
+            SELECT ep.*, u.user_name, d.dept_name, d.parent_id, d2.dept_name as parent_dept_name
             FROM employee_profiles ep
-            LEFT JOIN users u ON ep.user_id = u.id
-            LEFT JOIN departments d ON ep.dept_id = d.id
+                     LEFT JOIN users u ON ep.user_id = u.id
+                     LEFT JOIN departments d ON ep.dept_id = d.id
+                     LEFT JOIN departments d2 ON d.parent_id = d2.id
         `);
 
         // 3. 统计星座分布
@@ -114,7 +127,45 @@ router.get('/analyze_staff', authMiddleware, async (req, res) => {
                 userName: emp.user_name,
                 department: emp.dept_name
             }));
+        // 8. 统计年龄分布
+        const ageMap = {
+            "20岁以下": 0,
+            "20-25岁": 0,
+            "26-30岁": 0,
+            "31-35岁": 0,
+            "36-40岁": 0,
+            "41-45岁": 0,
+            "46-50岁": 0,
+            "50岁以上": 0
+        };
 
+        employees.forEach(emp => {
+            const age = new Date().getFullYear() - new Date(emp.birth_date).getFullYear();
+            const range = getAgeRange(age);
+            ageMap[range]++;
+        });
+
+        // 9. 部门分布统计
+        const departmentDistribution = {};
+        const deptEmployeeCount = new Map();
+
+        // 首先统计每个部门的人数
+        employees.forEach(emp => {
+            if (emp.dept_name) {
+                // 如果是二级部门，将员工计入一级部门
+                const deptName = emp.parent_dept_name || emp.dept_name;
+                deptEmployeeCount.set(deptName, (deptEmployeeCount.get(deptName) || 0) + 1);
+            }
+        });
+
+        // 转换为对象格式并计算百分比
+        for (const [dept, count] of deptEmployeeCount.entries()) {
+            const percentage = ((count / total) * 100).toFixed(1);
+            departmentDistribution[dept] = {
+                count,
+                percentage: `${percentage}%`
+            };
+        }
         return res.json({
             code: 0,
             msg: 'success',
@@ -124,7 +175,9 @@ router.get('/analyze_staff', authMiddleware, async (req, res) => {
                 educationList,
                 genderList,
                 onboardingTimeData,
-                workingYearsMaps
+                workingYearsMaps,
+                ageMap,
+                departmentDistribution
             }
         });
 
