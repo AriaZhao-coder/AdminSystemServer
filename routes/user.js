@@ -393,12 +393,12 @@ router.get('/get_route_list', authMiddleware, async (req, res) => {
             Admin: [
                 {
                     icon: "dashboard",
-                    zhName: "员工打卡",
+                    zhName: "员工",
                     route: "/dashboard"
                 },
                 {
                     icon: "team",
-                    zhName: "员工",
+                    zhName: "员工信息",
                     route: "/staff"
                 },
                 {
