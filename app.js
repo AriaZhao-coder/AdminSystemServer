@@ -21,7 +21,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //路由
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/attandance', attandanceRoutes);
+app.use('/api/attendance', attandanceRoutes);
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
