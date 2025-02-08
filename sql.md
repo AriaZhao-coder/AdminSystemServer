@@ -70,4 +70,28 @@ INSERT INTO departments (dept_name, parent_id, dept_level) VALUES
                                                                ('市场营销组', 4, 2),
                                                                ('内容运营组', 4, 2),
                                                                ('客户服务组', 4, 2);
+
+-- 考勤表
+CREATE TABLE attendance_records (
+                                    id INT PRIMARY KEY AUTO_INCREMENT,
+                                    user_id INT NOT NULL,                                    -- 关联用户表
+                                    employee_id INT NOT NULL,                                -- 关联员工信息表
+                                    dept_id INT NOT NULL,                                    -- 关联部门表
+                                    attendance_type TINYINT NOT NULL COMMENT '1:正常打卡, 2:补卡, 3:迟到, 4:早退, 5:旷工',
+                                    check_in_time TIMESTAMP NULL COMMENT '上班打卡时间',
+                                    check_out_time TIMESTAMP NULL COMMENT '下班打卡时间',
+                                    expected_check_in TIME NOT NULL DEFAULT '09:00:00' COMMENT '规定上班时间',
+                                    expected_check_out TIME NOT NULL DEFAULT '18:00:00' COMMENT '规定下班时间',
+                                    late_minutes INT DEFAULT 0 COMMENT '迟到分钟数',
+                                    early_minutes INT DEFAULT 0 COMMENT '早退分钟数',
+                                    remark VARCHAR(255) DEFAULT NULL COMMENT '备注信息',
+                                    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                    FOREIGN KEY (user_id) REFERENCES users(id),
+                                    FOREIGN KEY (employee_id) REFERENCES employee_profiles(id),
+                                    FOREIGN KEY (dept_id) REFERENCES departments(id),
+                                    INDEX idx_user_date (user_id, create_time),
+                                    INDEX idx_dept_date (dept_id, create_time),
+                                    INDEX idx_attendance_type (attendance_type)
+);
 ```

@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const userRoutes = require('./routes/user');
 const adminRoutes = require('./routes/admin');
+const attandanceRoutes = require('./routes/attendance');
 const cors = require('cors');
 const app = express();
 
@@ -20,6 +21,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //路由
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/attandance', attandanceRoutes);
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
