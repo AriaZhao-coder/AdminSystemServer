@@ -38,11 +38,12 @@ async function getAttendanceData(type, startDate, endDate, userId = null) {
         SELECT 
             ar.id,
             ar.create_time,
-            u.user_name as staffName,
+            ep.real_name as staffName,
             d.dept_name as staffDepartment,
             ar.attendance_type
         FROM attendance_records ar
         JOIN users u ON ar.user_id = u.id
+        JOIN employee_profiles ep ON ar.employee_id = ep.id
         JOIN departments d ON ar.dept_id = d.id
         WHERE ${conditions.join(' AND ')}
         ORDER BY ar.create_time DESC
