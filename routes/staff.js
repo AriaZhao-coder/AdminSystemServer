@@ -4,39 +4,51 @@ const db = require('../config/database');
 const authMiddleware = require('../middleware/auth');
 
 // 获取员工列表
-
 router.post('/info_list', authMiddleware, async (req, res) => {
     try {
-        const { page = 1, size = 10, queryData = {}} = req.query;
-        const isAdmin = req.user.role === 'Admin';
-        const userId = !isAdmin ? req.user.id : null;
+        // 确保转换为数字类型
+        const page = parseInt(req.body.page) || 1;
+        const size = parseInt(req.body.size) || 5;
+        const queryData = req.body.queryData || {};
 
-        //构建查询条件
+        const isAdmin = req.user.role === 'Admin';
+
+        // 构建查询条件
         const conditions = [];
         const params = [];
 
-        if(!isAdmin) {
+        if (!isAdmin) {
             conditions.push('u.id = ?');
-            params.push(userId);
+            params.push(req.user.id); // 使用 req.user.id 替代 userId
         }
 
-        //处理查询参数
-        if (queryData.education && queryData.education.length) {
-            conditions.push('ep.education IN (?)');
-            params.push(queryData.education);
+        // 处理查询参数，确保是数组
+        if (Array.isArray(queryData.education) && queryData.education.length > 0) {
+            const placeholders = queryData.education.map(() => '?').join(',');
+            conditions.push(`ep.education IN (${placeholders})`);
+            params.push(...queryData.education);
         }
-        if (queryData.level && queryData.level.length) {
-            conditions.push('el.level_name IN (?)');
-            params.push(queryData.level);
+
+        if (Array.isArray(queryData.level) && queryData.level.length > 0) {
+            const placeholders = queryData.level.map(() => '?').join(',');
+            conditions.push(`el.level_name IN (${placeholders})`);
+            params.push(...queryData.level);
         }
-        if (queryData.department && queryData.department.length) {
-            conditions.push('d.dept_name IN (?)');
-            params.push(queryData.department);
+
+        if (Array.isArray(queryData.department) && queryData.department.length > 0) {
+            const placeholders = queryData.department.map(() => '?').join(',');
+            conditions.push(`d.dept_name IN (${placeholders})`);
+            params.push(...queryData.department);
         }
-        if (queryData.name && queryData.name.length) {
-            conditions.push('ep.real_name IN (?)');
-            params.push(queryData.name);
+
+        if (Array.isArray(queryData.name) && queryData.name.length > 0) {
+            const placeholders = queryData.name.map(() => '?').join(',');
+            conditions.push(`ep.real_name IN (${placeholders})`);
+            params.push(...queryData.name);
         }
+
+        const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
 
         // 查询总数
         const countSql = `
@@ -48,36 +60,39 @@ router.post('/info_list', authMiddleware, async (req, res) => {
             ${whereClause}
         `;
 
-        const [countResult] = await db.query(countSql, params);
+        const [countResult] = await db.execute(countSql, params);
         const total = countResult[0].total;
 
-        //查询员工列表
+        // 查询员工列表
         const offset = (page - 1) * size;
         const staffSql = `
-            SELECT 
+            SELECT
                 ep.id,
                 u.role as identity,
-                el.level_name,
-                el.level_description,
-                ep.real_name as name,
-                u.user_name,
-                d.dept_name,
-                d.id as dept_id,
-                ep.education,
-                ep.mobile,
-                ep.gender as sex,
-                ep.birth_date as birthday,
-                ep.join_date,
-                ep.avatar
+        el.level_name,
+        el.level_description,
+        ep.real_name as name,
+        u.user_name,
+        d.dept_name,
+        d.id as dept_id,
+        ep.education,
+        u.mobile,
+        ep.gender as sex,
+        ep.birth_date as birthday,
+        ep.join_date,
+        ep.avatar
             FROM employee_profiles ep
-            JOIN users u ON ep.user_id = u.id
-            JOIN departments d ON ep.dept_id = d.id
-            LEFT JOIN employee_levels el ON ep.level_id = el.id
-            ${whereClause}
+                JOIN users u ON ep.user_id = u.id
+                JOIN departments d ON ep.dept_id = d.id
+                LEFT JOIN employee_levels el ON ep.level_id = el.id
+                ${whereClause}
             ORDER BY ep.id
-            LIMIT ? OFFSET ?
+                LIMIT ${Number(offset)}, ${Number(size)}
         `;
-        const [staffList] = await db.execute(staffSql, [...params, size, offset]);
+
+        // 不再需要将分页参数添加到查询参数中
+        const queryParams = conditions.length ? params : [];
+        const [staffList] = await db.execute(staffSql, queryParams);
 
         // 格式化返回数据
         const formattedStaffList = staffList.map(staff => ({
@@ -119,8 +134,7 @@ router.post('/info_list', authMiddleware, async (req, res) => {
         });
     }
 });
-
-//获取员工详情
+// 获取员工详情
 router.post('/info/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
@@ -136,9 +150,9 @@ router.post('/info/:id', authMiddleware, async (req, res) => {
             });
         }
 
-        //查询员工详情
+        // 查询员工详情
         const staffSql = `
-            SELECT 
+            SELECT
                 ep.*,
                 u.role as identity,
                 u.user_name,
@@ -147,18 +161,18 @@ router.post('/info/:id', authMiddleware, async (req, res) => {
                 d.dept_name,
                 d.id as dept_id
             FROM employee_profiles ep
-            JOIN users u ON ep.user_id = u.id
-            JOIN departments d ON ep.dept_id = d.id
-            LEFT JOIN employee_levels el ON ep.level_id = el.id
+                JOIN users u ON ep.user_id = u.id
+                JOIN departments d ON ep.dept_id = d.id
+                LEFT JOIN employee_levels el ON ep.level_id = el.id
             WHERE ep.id = ?
         `;
 
-        const [staffDetails] = await db.query(staffSql, [id]);
+        const [staffDetails] = await db.execute(staffSql, [id]);
 
         if (staffDetails.length === 0) {
             return res.json({
-                code: 0,
-                msg:'员工不存在',
+                code: 1,
+                msg: '员工不存在',
                 data: null
             });
         }
@@ -168,22 +182,24 @@ router.post('/info/:id', authMiddleware, async (req, res) => {
             id: staff.id,
             identity: staff.identity === 'Admin' ? 1 : 0,
             level: {
-                levelName:staff.level_name,
+                levelName: staff.level_name,
                 levelDescription: staff.level_description
             },
             name: staff.real_name,
             userName: staff.user_name,
             department: {
                 id: staff.dept_id,
-                department: staff.dept_name
+                departmentName: staff.dept_name
             },
             education: staff.education,
             mobile: staff.mobile,
+            sex: staff.gender,
             birthday: staff.birth_date,
-            joinDate: staff.joinDate,
+            joinDate: staff.join_date,
             avatar: staff.avatar,
             idNumber: staff.id_number
         };
+
         return res.json({
             code: 0,
             msg: 'success',
@@ -298,10 +314,10 @@ router.post('/add', authMiddleware, async (req, res) => {
 
         // 插入员工信息
         const [employeeResult] = await connection.execute(
-            `INSERT INTO employee_profiles 
-            (user_id, dept_id, real_name, education, gender, birth_date, 
-            join_date, avatar, id_number, level_id) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO employee_profiles
+             (user_id, dept_id, real_name, education, gender, birth_date,
+              join_date, avatar, id_number, level_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 userResult.insertId,
                 department.id,
@@ -341,26 +357,29 @@ router.post('/add', authMiddleware, async (req, res) => {
     }
 });
 
-//修改员工信息
+// 修改员工信息
 router.put('/update/:id', authMiddleware, async (req, res) => {
     const connection = await db.getConnection();
     try {
         const { id } = req.params;
         const isAdmin = req.user.role === 'Admin';
-        const userId = req.user.role;
-        //获取当前员工信息
+        const userId = req.user.id;
+
+        // 获取当前员工信息
         const [currentEmployee] = await connection.execute(
             'SELECT user_id FROM employee_profiles WHERE id = ?',
             [id]
         );
+
         if (currentEmployee.length === 0) {
             return res.json({
                 code: 1,
-                msg:'员工不存在',
+                msg: '员工不存在',
                 data: null
-            })
+            });
         }
-        //检查权限
+
+        // 检查权限
         if (!isAdmin && currentEmployee[0].user_id !== userId) {
             return res.json({
                 code: 403,
@@ -372,11 +391,11 @@ router.put('/update/:id', authMiddleware, async (req, res) => {
         const updateData = req.body;
         await connection.beginTransaction();
 
-        //构建更新字段
+        // 构建更新字段
         const updateFields = [];
         const updateParams = [];
 
-        //管理员可以修改所有字段
+        // 管理员可以修改所有字段
         if (isAdmin) {
             if (updateData.name) {
                 updateFields.push('real_name = ?');
@@ -396,23 +415,23 @@ router.put('/update/:id', authMiddleware, async (req, res) => {
             }
         }
 
-        //所有用户都可以修改的字段
+        // 所有用户都可以修改的字段
         if (updateData.mobile) {
-            updateFields.push('mobil = ?');
+            updateFields.push('mobile = ?');
             updateParams.push(updateData.mobile);
         }
 
-        //执行更新
+        // 执行更新
         if (updateFields.length > 0) {
             updateParams.push(id);
             await connection.execute(
-                `UPDATE employee_profiles 
-                 SET ${updateFields.join(',')}
+                `UPDATE employee_profiles
+                 SET ${updateFields.join(', ')}
                  WHERE id = ?`,
-                updateParams,
+                updateParams
             );
-
         }
+
         await connection.commit();
 
         return res.json({
@@ -420,7 +439,7 @@ router.put('/update/:id', authMiddleware, async (req, res) => {
             msg: '修改成功',
             data: {
                 id,
-                ...updateData,
+                ...updateData
             }
         });
 
@@ -429,11 +448,12 @@ router.put('/update/:id', authMiddleware, async (req, res) => {
         console.error('修改员工信息错误:', error);
         return res.json({
             code: 1,
-            msg:"修改员工信息失败",
+            msg: '修改员工信息失败',
             data: null
         });
-    }finally {
+    } finally {
         connection.release();
     }
-})
+});
+
 module.exports = router;
