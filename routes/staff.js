@@ -156,6 +156,7 @@ router.post('/info/:id', authMiddleware, async (req, res) => {
                 ep.*,
                 u.role as identity,
                 u.user_name,
+                u.mobile,
                 el.level_name,
                 el.level_description,
                 d.dept_name,
@@ -391,44 +392,59 @@ router.put('/update/:id', authMiddleware, async (req, res) => {
         const updateData = req.body;
         await connection.beginTransaction();
 
-        // 构建更新字段
-        const updateFields = [];
-        const updateParams = [];
+        // 构建 employee_profiles 表的更新字段
+        const profileUpdateFields = [];
+        const profileUpdateParams = [];
+
+        // 构建 users 表的更新字段
+        const userUpdateFields = [];
+        const userUpdateParams = [];
 
         // 管理员可以修改所有字段
         if (isAdmin) {
             if (updateData.name) {
-                updateFields.push('real_name = ?');
-                updateParams.push(updateData.name);
+                profileUpdateFields.push('real_name = ?');
+                profileUpdateParams.push(updateData.name);
             }
             if (updateData.department) {
-                updateFields.push('dept_id = ?');
-                updateParams.push(updateData.department.id);
+                profileUpdateFields.push('dept_id = ?');
+                profileUpdateParams.push(updateData.department.id);
             }
             if (updateData.education) {
-                updateFields.push('education = ?');
-                updateParams.push(updateData.education);
+                profileUpdateFields.push('education = ?');
+                profileUpdateParams.push(updateData.education);
             }
             if (updateData.level) {
-                updateFields.push('level_id = ?');
-                updateParams.push(updateData.level.id);
+                profileUpdateFields.push('level_id = ?');
+                profileUpdateParams.push(updateData.level.id);
             }
         }
 
         // 所有用户都可以修改的字段
         if (updateData.mobile) {
-            updateFields.push('mobile = ?');
-            updateParams.push(updateData.mobile);
+            userUpdateFields.push('mobile = ?');
+            userUpdateParams.push(updateData.mobile);
         }
 
-        // 执行更新
-        if (updateFields.length > 0) {
-            updateParams.push(id);
+        // 执行 employee_profiles 表的更新
+        if (profileUpdateFields.length > 0) {
+            profileUpdateParams.push(id);
             await connection.execute(
                 `UPDATE employee_profiles
-                 SET ${updateFields.join(', ')}
+                 SET ${profileUpdateFields.join(', ')}
                  WHERE id = ?`,
-                updateParams
+                profileUpdateParams
+            );
+        }
+
+        // 执行 users 表的更新
+        if (userUpdateFields.length > 0) {
+            userUpdateParams.push(currentEmployee[0].user_id);
+            await connection.execute(
+                `UPDATE users
+                 SET ${userUpdateFields.join(', ')}
+                 WHERE id = ?`,
+                userUpdateParams
             );
         }
 
