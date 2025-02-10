@@ -222,10 +222,7 @@ router.delete('/delete/:id', authMiddleware, async (req, res) => {
     const connection = await db.getConnection();
     try {
         const { id } = req.params;
-        const isAdmin = req.user.role === 'Admin';
-
-        // 检查权限
-        if (!isAdmin) {
+        if (!req.user.role === 'Admin') {
             return res.json({
                 code: 403,
                 msg: '对不起，您没有删除员工信息的权限',
@@ -235,13 +232,12 @@ router.delete('/delete/:id', authMiddleware, async (req, res) => {
 
         await connection.beginTransaction();
 
-        // 查询关联的user_id
         const [userResult] = await connection.execute(
             'SELECT user_id FROM employee_profiles WHERE id = ?',
             [id]
         );
 
-        if (userResult.length === 0) {
+        if (!userResult.length) {
             return res.json({
                 code: 1,
                 msg: '员工不存在',
@@ -251,20 +247,47 @@ router.delete('/delete/:id', authMiddleware, async (req, res) => {
 
         const userId = userResult[0].user_id;
 
-        // 删除员工信息
+        // 1. 删除考核项目
+        await connection.execute(
+            `DELETE ai FROM assessment_items ai 
+             JOIN assessment_records ar ON ai.assessment_id = ar.id 
+             WHERE ar.employee_id = ?`,
+            [id]
+        );
+
+        // 2. 删除考核记录
+        await connection.execute(
+            'DELETE FROM assessment_records WHERE employee_id = ?',
+            [id]
+        );
+
+        // 3. 删除绩效目标
+        await connection.execute(
+            `DELETE pt FROM performance_targets pt
+             JOIN performance_records pr ON pt.performance_id = pr.id
+             WHERE pr.employee_id = ?`,
+            [id]
+        );
+
+        // 4. 删除绩效记录
+        await connection.execute(
+            'DELETE FROM performance_records WHERE employee_id = ?',
+            [id]
+        );
+
+        // 5. 删除员工信息
         await connection.execute(
             'DELETE FROM employee_profiles WHERE id = ?',
             [id]
         );
 
-        // 删除用户账号
+        // 6. 删除用户账号
         await connection.execute(
             'DELETE FROM users WHERE id = ?',
             [userId]
         );
 
         await connection.commit();
-
         return res.json({
             code: 0,
             msg: '删除成功',
