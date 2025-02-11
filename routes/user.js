@@ -392,12 +392,12 @@ router.get('/get_route_list', authMiddleware, async (req, res) => {
         const routeMap = {
             Admin: [
                 {
-                    icon: "dashboard",
-                    zhName: "员工",
+                    icon: "team",
+                    zhName: "员工分析",
                     route: "/dashboard"
                 },
                 {
-                    icon: "team",
+                    icon: "reward",
                     zhName: "员工信息",
                     route: "/staff"
                 },
@@ -443,6 +443,11 @@ router.get('/get_route_list', authMiddleware, async (req, res) => {
                     zhName: "出勤管理",
                     route: "/attendance"
                 },
+                {
+                    icon: "reward",
+                    zhName: "员工信息",
+                    route: "/staff"
+                }
             ]
         };
 
