@@ -274,14 +274,24 @@ router.delete('/delete/:id', authMiddleware, async (req, res) => {
             'DELETE FROM performance_records WHERE employee_id = ?',
             [id]
         );
+        // 5. 删除奖惩记录
+        await connection.execute(
+            'DELETE FROM reward_punishment_records WHERE employee_id = ?',
+            [id]
+        );
+        // 6. 删除考勤记录
+        await connection.execute(
+            'DELETE FROM attendance_records WHERE employee_id = ?',
+            [id]
+        );
 
-        // 5. 删除员工信息
+        // 7. 删除员工信息
         await connection.execute(
             'DELETE FROM employee_profiles WHERE id = ?',
             [id]
         );
 
-        // 6. 删除用户账号
+        // 8. 删除用户账号
         await connection.execute(
             'DELETE FROM users WHERE id = ?',
             [userId]

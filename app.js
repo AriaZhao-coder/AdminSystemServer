@@ -2,8 +2,10 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const userRoutes = require('./routes/user');
 const adminRoutes = require('./routes/admin');
-const attandanceRoutes = require('./routes/attendance');
+const attendanceRoutes = require('./routes/attendance');
 const staffRoutes = require('./routes/staff');
+const avatarRoutes = require('./routes/avatar');
+const path = require('path');
 const cors = require('cors');
 const app = express();
 
@@ -15,6 +17,9 @@ app.use(cors({
     credentials: true
 }));
 
+// 静态文件服务
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+
 // 中间件
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -22,9 +27,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //路由
 app.use('/api/user', userRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/attendance', attandanceRoutes);
+app.use('/api/attendance', attendanceRoutes);
 app.use('/api/staff', staffRoutes);
-
+app.use('/api/avatar', avatarRoutes);
 
 // 错误处理中间件
 app.use((err, req, res, next) => {
