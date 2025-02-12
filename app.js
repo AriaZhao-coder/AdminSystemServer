@@ -5,9 +5,9 @@ const adminRoutes = require('./routes/admin');
 const attendanceRoutes = require('./routes/attendance');
 const staffRoutes = require('./routes/staff');
 const avatarRoutes = require('./routes/avatar');
-const path = require('path');
 const cors = require('cors');
 const app = express();
+const path = require('path');
 
 
 app.use(cors({
@@ -19,7 +19,7 @@ app.use(cors({
 
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
-
+app.use('/uploads', express.static(path.join(__dirname, 'public/images')));
 // 中间件
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
