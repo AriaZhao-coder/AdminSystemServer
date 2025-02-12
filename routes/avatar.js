@@ -41,6 +41,48 @@ const upload = multer({
     }
 });
 
+
+// 仅上传接口（用于新增员工时上传头像）
+router.post('/upload', authMiddleware, upload.single('avatar'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                code: 1,
+                msg: '没有文件被上传',
+                data: null
+            });
+        }
+
+        // 构建文件访问URL
+        const fileUrl = `/uploads/avatars/${req.file.filename}`;
+
+        return res.json({
+            code: 0,
+            msg: '上传成功',
+            data: {
+                url: fileUrl
+            }
+        });
+    } catch (error) {
+        // 如果上传失败，删除已上传的文件
+        if (req.file) {
+            const filePath = path.join(__dirname, '../public/uploads/avatars', req.file.filename);
+            try {
+                await fs.unlink(filePath);
+            } catch (err) {
+                console.error('删除失败的上传文件时出错:', err);
+            }
+        }
+
+        console.error('文件上传错误:', error);
+        return res.status(500).json({
+            code: 1,
+            msg: error.message || '文件上传失败',
+            data: null
+        });
+    }
+});
+
 // 上传头像接口
 router.post('/:employeeId', authMiddleware, upload.single('avatar'), async (req, res) => {
     const connection = await db.getConnection();
